@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -28,6 +28,14 @@ export default function WelcomeScreen() {
           fill="#4F7DFF"
         />
       </Svg>
+
+      <View style={styles.logoContainer}>
+        <Image
+          source={{ uri: 'https://rork.app/pa/43hptyzenad204y9frkqu/logo' }}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
+      </View>
 
       <View style={styles.centerContent}>
         <Text style={styles.appName}>R.I.S.O. APP TECNICI</Text>
@@ -121,5 +129,17 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
     fontStyle: 'italic' as const,
     marginTop: 32,
+  },
+  logoContainer: {
+    position: 'absolute' as const,
+    top: 60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
 });
