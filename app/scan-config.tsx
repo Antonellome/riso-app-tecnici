@@ -13,6 +13,8 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { X, Upload, Camera as CameraIcon } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
+import { getUserByActivationCode } from '@/utils/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 
@@ -21,7 +23,7 @@ export default function ScanConfigScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const { importSyncConfig, saveSettings, settings } = useApp();
+  const { saveSettings, settings } = useApp();
   const insets = useSafeAreaInsets();
 
   const handleConfigData = useCallback(async (data: string) => {
@@ -31,49 +33,47 @@ export default function ScanConfigScreen() {
     setScanned(true);
     
     try {
-      console.log('[ScanConfig] Processing config data...');
+      console.log('[ScanConfig] Processing activation code...');
       
-      let configData;
-      try {
-        configData = JSON.parse(data);
-      } catch {
-        try {
-          configData = JSON.parse(decodeURIComponent(data));
-        } catch {
-          throw new Error('Formato dati non valido');
-        }
+      const activationCode = data.trim().toUpperCase();
+      
+      if (!/^[A-Z0-9]{9}$/.test(activationCode)) {
+        throw new Error('Codice attivazione non valido. Deve essere di 9 caratteri alfanumerici.');
       }
 
-      if (!configData.serverUrl || !configData.userId || !configData.apiKey) {
-        throw new Error('Configurazione incompleta. Campi richiesti: serverUrl, userId, apiKey');
+      console.log('[ScanConfig] Searching user with activation code:', activationCode);
+      const user = await getUserByActivationCode(activationCode);
+      
+      if (!user) {
+        throw new Error('Codice attivazione non trovato o non valido.');
+      }
+      
+      if (!user.attivo) {
+        throw new Error('Questo codice di attivazione è stato disattivato.');
       }
 
-      await importSyncConfig(JSON.stringify(configData));
+      console.log('[ScanConfig] User found:', user.uid);
+      
+      await AsyncStorage.setItem('@riso_app_activation_code', activationCode);
+      await AsyncStorage.setItem('@riso_app_user_uid', user.uid);
+      await AsyncStorage.setItem('@riso_app_is_activated', 'true');
 
       const updatedSettings = {
         ...settings,
-        sync: {
-          enabled: true,
-          serverUrl: configData.serverUrl,
-          userId: configData.userId,
-          apiKey: configData.apiKey,
-          autoSync: configData.autoSync ?? false,
-          lastSync: settings.sync?.lastSync,
+        user: {
+          name: `${user.nome}${user.cognome ? ' ' + user.cognome : ''}`,
+          company: settings.user.company,
         },
+        work: user.configurazioneApp.impostazioniLavoro,
+        ships: user.configurazioneApp.naviAccessibili.map(id => id),
+        locations: user.configurazioneApp.cantieriAccessibili.map(id => id),
       };
-
-      if (configData.technicianName && !settings.user.name) {
-        updatedSettings.user.name = configData.technicianName;
-      }
-      if (configData.companyName && !settings.user.company) {
-        updatedSettings.user.company = configData.companyName;
-      }
 
       await saveSettings(updatedSettings);
 
       Alert.alert(
-        'Configurazione Importata',
-        'La sincronizzazione è stata configurata con successo! Puoi ora sincronizzare i dati con l&apos;app master.',
+        'Attivazione Completata',
+        `Benvenuto ${user.nome}! La tua app è stata configurata con successo.`,
         [
           {
             text: 'OK',
@@ -82,10 +82,10 @@ export default function ScanConfigScreen() {
         ]
       );
     } catch (error) {
-      console.error('[ScanConfig] Error processing config:', error);
+      console.error('[ScanConfig] Error processing activation code:', error);
       Alert.alert(
         'Errore',
-        error instanceof Error ? error.message : 'Impossibile elaborare la configurazione',
+        error instanceof Error ? error.message : 'Impossibile elaborare il codice di attivazione',
         [
           {
             text: 'OK',
@@ -97,7 +97,7 @@ export default function ScanConfigScreen() {
         ]
       );
     }
-  }, [importSyncConfig, saveSettings, settings, processing]);
+  }, [saveSettings, settings, processing]);
 
   useEffect(() => {
     if (config && !scanned) {

@@ -21,6 +21,7 @@ export interface TechnicianCategory {
 export interface Report {
   id: string;
   userId?: string;
+  recipientUserId: string;
   date: string;
   shiftType: ShiftType;
   startTime: string;
@@ -36,7 +37,7 @@ export interface Report {
   updatedAt: number;
   createdBy?: string;
   createdByName?: string;
-  isShared?: boolean;
+  isSharedCopy: boolean;
 }
 
 export interface UserSettings {
@@ -121,4 +122,33 @@ export interface Notification {
   priority: 'low' | 'normal' | 'high';
   type: 'info' | 'warning' | 'alert' | 'config';
   configData?: SyncConfigData;
+}
+
+export interface Ship {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
+export interface Location {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
+export interface User {
+  uid: string;
+  codiceAttivazione: string;
+  nome: string;
+  cognome?: string;
+  email?: string;
+  ruolo: 'tecnico' | 'admin' | 'master';
+  configurazioneApp: {
+    naviAccessibili: string[];
+    cantieriAccessibili: string[];
+    impostazioniLavoro: WorkSettings;
+  };
+  attivo: boolean;
+  dataCreazione: number;
+  ultimoAccesso?: number;
 }
