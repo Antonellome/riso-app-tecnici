@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   appTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700' as const,
     color: '#ffffff',
     textAlign: 'center' as const,
