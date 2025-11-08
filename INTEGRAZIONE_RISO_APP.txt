@@ -1,0 +1,426 @@
+═══════════════════════════════════════════════════════════════
+                    INTEGRAZIONE RISO APP
+         Documento Completo per Sincronizzazione con RISO Master
+═══════════════════════════════════════════════════════════════
+
+📋 CONTENUTO DEL DOCUMENTO
+
+1. Panoramica Sistema
+2. Credenziali Firebase
+3. Struttura Dati UserConfig
+4. Flusso di Attivazione
+5. Storage Locale
+6. Sincronizzazione Reports
+7. Sistema Notifiche
+8. Esempio Pratico Completo
+9. Checklist Implementazione
+10. Troubleshooting
+
+
+═══════════════════════════════════════════════════════════════
+1. PANORAMICA SISTEMA
+═══════════════════════════════════════════════════════════════
+
+RISO Master (applicazione principale)
+  ↓ crea configurazione
+  ↓ genera codice attivazione (es. ABC123XYZ)
+  ↓ salva su Firebase: userConfigs/{CODICE_ATTIVAZIONE}
+  
+RISO App (applicazione tecnici)
+  ↓ tecnico inserisce codice attivazione
+  ↓ scarica configurazione da Firebase
+  ↓ applica impostazioni automaticamente
+  ↓ ascolta aggiornamenti real-time
+
+Flusso di comunicazione:
+- Firebase Firestore: Configurazioni e aggiornamenti real-time
+- AsyncStorage Condiviso: @riso_sync_storage per dati locali
+
+
+═══════════════════════════════════════════════════════════════
+2. CREDENZIALI FIREBASE (DEVONO ESSERE IDENTICHE!)
+═══════════════════════════════════════════════════════════════
+
+Entrambe le app DEVONO usare le stesse credenziali Firebase:
+
+EXPO_PUBLIC_FIREBASE_API_KEY=AIzaSy...
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=riso-app.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=riso-app
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=riso-app.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+EXPO_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
+
+
+═══════════════════════════════════════════════════════════════
+3. STRUTTURA DATI UserConfig (TypeScript Interface)
+═══════════════════════════════════════════════════════════════
+
+export interface UserConfig {
+  // Identificazione
+  userId: string;              // ID univoco del tecnico
+  apiKey: string;              // API Key per autenticazione
+  
+  // Informazioni
+  technicianName: string;      // Nome del tecnico
+  companyName: string;         // Nome dell'azienda
+  
+  // Configurazione
+  serverUrl: string;           // URL server sync
+  autoSync: boolean;           // Sincronizzazione automatica
+  active: boolean;             // Se il codice è attivo
+  
+  // Timestamp
+  createdAt: number;           // Timestamp creazione
+  updatedAt?: number;          // Timestamp ultimo aggiornamento
+  
+  // Liste (opzionali)
+  ships?: string[];            // Lista navi
+  locations?: string[];        // Lista cantieri/location
+  
+  // Categorie tecnici (opzionali)
+  technicianCategories?: {
+    category: string;          // Nome categoria
+    technicians: string[];     // Lista tecnici
+  }[];
+  
+  // Configurazione lavoro (opzionale)
+  work?: {
+    defaultStartTime: string;     // "07:30"
+    defaultEndTime: string;       // "16:30"
+    defaultPauseMinutes: number;  // 60
+    hourlyRates: {
+      type: string;               // "Ordinaria", "Straordinaria", etc.
+      rate: number;               // Tariffa oraria
+    }[];
+  };
+}
+
+
+═══════════════════════════════════════════════════════════════
+4. FLUSSO DI ATTIVAZIONE (Step by Step)
+═══════════════════════════════════════════════════════════════
+
+LATO RISO MASTER:
+----------------
+
+Step 1: Creare la configurazione
+const config: UserConfig = {
+  userId: "TEC001",
+  apiKey: "key_abc123xyz",
+  technicianName: "Mario Rossi",
+  companyName: "Riso S.r.l.",
+  serverUrl: "https://sync.riso.com",
+  autoSync: true,
+  active: true,
+  createdAt: Date.now(),
+  ships: ["Nave Alpha", "Nave Beta"],
+  locations: ["Cantiere A", "Cantiere B"],
+  technicianCategories: [
+    {
+      category: "Elettricisti",
+      technicians: ["Luigi Verdi", "Paolo Bianchi"]
+    },
+    {
+      category: "Meccanici",
+      technicians: ["Giovanni Neri", "Francesco Gialli"]
+    }
+  ],
+  work: {
+    defaultStartTime: "07:30",
+    defaultEndTime: "16:30",
+    defaultPauseMinutes: 60,
+    hourlyRates: [
+      { type: "Ordinaria", rate: 15 },
+      { type: "Straordinaria", rate: 22.5 },
+      { type: "Festiva", rate: 30 }
+    ]
+  }
+};
+
+Step 2: Generare codice attivazione (9 caratteri alfanumerici)
+const activationCode = generateActivationCode(); // es. "ABC123XYZ"
+
+Step 3: Salvare su Firebase
+await saveConfigForCode(activationCode, config);
+
+Step 4: Fornire il codice al tecnico
+// Il tecnico riceverà: ABC123XYZ
+
+
+LATO RISO APP (Tecnico):
+------------------------
+
+Step 1: Il tecnico avvia l'app per la prima volta
+
+Step 2: Vede la schermata di attivazione
+
+Step 3: Inserisce il codice: ABC123XYZ
+
+Step 4: L'app:
+  - Chiama Firebase per scaricare la configurazione
+  - Applica automaticamente tutte le impostazioni
+  - Salva il codice per aggiornamenti futuri
+  - Attiva il listener real-time per modifiche
+
+Step 5: L'app è configurata e pronta all'uso!
+
+
+═══════════════════════════════════════════════════════════════
+5. STORAGE LOCALE (Chiavi AsyncStorage)
+═══════════════════════════════════════════════════════════════
+
+Chiavi usate da RISO App:
+
+@riso_app_settings              → Impostazioni app
+@riso_app_reports               → Reports salvati
+@riso_app_password              → Password protezione app
+@riso_app_notifications         → Notifiche
+@riso_app_recent_technicians    → Tecnici usati di recente
+@riso_app_activation_code       → Codice attivazione
+@riso_app_is_activated          → Flag attivazione
+
+Chiavi condivise (MockSyncServer):
+
+@riso_sync_server_users         → Utenti registrati
+@riso_sync_server_reports       → Reports sincronizzati
+@riso_sync_server_notifications → Notifiche server
+@riso_sync_server_technicians   → Lista tecnici
+@riso_sync_server_ships         → Lista navi
+@riso_sync_server_locations     → Lista cantieri
+
+
+═══════════════════════════════════════════════════════════════
+6. SINCRONIZZAZIONE REPORTS (API MockSyncServer)
+═══════════════════════════════════════════════════════════════
+
+Report Structure:
+{
+  id: string;
+  userId: string;
+  date: string;                // "2025-01-15"
+  shiftType: string;           // "Ordinaria", "Straordinaria", etc.
+  startTime: string;           // "07:30"
+  endTime: string;             // "16:30"
+  pauseMinutes: number;        // 60
+  ship: string;                // "Nave Alpha"
+  location: string;            // "Cantiere A"
+  description: string;
+  materials: string;
+  workDone: string;
+  technicians: {
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+  }[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+API Methods disponibili:
+
+// Sincronizzare reports verso server
+await MockSyncServer.syncUserData(userId, apiKey, reports);
+
+// Scaricare reports da server
+await MockSyncServer.getUserData(userId, apiKey);
+
+// Ottenere lista navi e cantieri
+await MockSyncServer.getShipsAndLocations();
+
+// Ottenere tecnici categorizzati
+await MockSyncServer.getTechnicians();
+
+// Ottenere notifiche utente
+await MockSyncServer.getUserNotifications(userId, apiKey);
+
+
+═══════════════════════════════════════════════════════════════
+7. SISTEMA NOTIFICHE
+═══════════════════════════════════════════════════════════════
+
+Notification Structure:
+{
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  timestamp: number;
+  priority: 'low' | 'normal' | 'high';
+  type: 'info' | 'warning' | 'alert' | 'config';
+  targetUsers: string[];       // ['all'] o ['TEC001', 'TEC002']
+  createdBy: string;
+  configData?: SyncConfigData; // Per notifiche tipo 'config'
+}
+
+RISO Master può inviare notifiche a:
+- Tutti i tecnici: targetUsers: ['all']
+- Tecnici specifici: targetUsers: ['TEC001', 'TEC002']
+
+Esempio invio notifica:
+await MockSyncServer.addNotification({
+  id: Date.now().toString(),
+  title: "Aggiornamento Tariffe",
+  message: "Le tariffe orarie sono state aggiornate.",
+  date: new Date().toISOString().split('T')[0],
+  timestamp: Date.now(),
+  priority: 'high',
+  type: 'info',
+  targetUsers: ['all'],
+  createdBy: 'MASTER'
+});
+
+
+═══════════════════════════════════════════════════════════════
+8. ESEMPIO PRATICO COMPLETO
+═══════════════════════════════════════════════════════════════
+
+SCENARIO: Aggiungere un nuovo tecnico e notificare l'app
+
+RISO MASTER:
+-----------
+
+// 1. Creare configurazione iniziale (solo prima volta)
+const config: UserConfig = {
+  userId: "TEC001",
+  apiKey: "key_mario_rossi",
+  technicianName: "Mario Rossi",
+  companyName: "Riso S.r.l.",
+  serverUrl: "https://sync.riso.com",
+  autoSync: true,
+  active: true,
+  createdAt: Date.now(),
+  ships: ["Nave Alpha"],
+  locations: ["Cantiere A"],
+  technicianCategories: [{
+    category: "Elettricisti",
+    technicians: ["Luigi Verdi"]
+  }],
+  work: {
+    defaultStartTime: "07:30",
+    defaultEndTime: "16:30",
+    defaultPauseMinutes: 60,
+    hourlyRates: [
+      { type: "Ordinaria", rate: 15 }
+    ]
+  }
+};
+
+// 2. Generare codice e salvare
+const code = "ABC123XYZ";
+await saveConfigForCode(code, config);
+
+// 3. Fornire codice a Mario Rossi
+console.log("Codice attivazione per Mario Rossi:", code);
+
+// ... Dopo qualche giorno, aggiungiamo un nuovo tecnico ...
+
+// 4. Aggiornare la configurazione
+config.technicianCategories[0].technicians.push("Paolo Bianchi");
+config.updatedAt = Date.now();
+await saveConfigForCode(code, config);
+
+// 5. L'app di Mario riceverà automaticamente l'aggiornamento!
+
+
+RISO APP (Mario Rossi):
+----------------------
+
+// 1. Prima attivazione
+await activateWithCode("ABC123XYZ");
+
+// L'app scarica e applica automaticamente:
+// - Nome: Mario Rossi
+// - Azienda: Riso S.r.l.
+// - Navi: ["Nave Alpha"]
+// - Cantieri: ["Cantiere A"]
+// - Tecnici: ["Luigi Verdi"]
+// - Tariffe: Ordinaria 15€/h
+
+// 2. Dopo l'aggiornamento da RISO Master
+// Il listener real-time rileva la modifica e aggiorna:
+// - Tecnici: ["Luigi Verdi", "Paolo Bianchi"]
+
+// 3. Mario può ora selezionare Paolo Bianchi nei report!
+
+
+═══════════════════════════════════════════════════════════════
+9. CHECKLIST IMPLEMENTAZIONE
+═══════════════════════════════════════════════════════════════
+
+RISO APP (✓ COMPLETATO):
+------------------------
+✓ Firebase integration (utils/firebase.ts)
+✓ UserConfig interface
+✓ getConfigByCode() function
+✓ subscribeToConfigUpdates() function
+✓ Activation screen (components/ActivationCodeScreen.tsx)
+✓ activateWithCode() in AppContext
+✓ skipActivation() fallback
+✓ Real-time config listener
+✓ Automatic config application
+✓ Storage keys defined
+
+
+RISO MASTER (DA IMPLEMENTARE):
+------------------------------
+☐ Installare Firebase SDK
+☐ Aggiungere credenziali Firebase (identiche a RISO App!)
+☐ Creare utils/firebase.ts con:
+    - initializeFirebase()
+    - saveConfigForCode()
+    - subscribeToConfigUpdates() (opzionale)
+☐ Creare interface UserConfig (copiare da RISO App)
+☐ UI per creare nuove configurazioni
+☐ UI per generare codici attivazione
+☐ UI per gestire tecnici esistenti
+☐ UI per visualizzare app attive
+☐ UI per disattivare/riattivare codici
+☐ Sistema per inviare notifiche
+
+
+═══════════════════════════════════════════════════════════════
+10. TROUBLESHOOTING
+══════════════════════════════════════════════��════════════════
+
+Problema: "Codice non valido o non trovato"
+Soluzione:
+- Verificare che il codice sia esattamente quello salvato su Firebase
+- Controllare che il documento esista in userConfigs/{CODICE}
+- Verificare le credenziali Firebase in entrambe le app
+
+Problema: "Questo codice è stato disattivato"
+Soluzione:
+- Il campo "active" è false
+- Riattivare da RISO Master impostando active: true
+
+Problema: "L'app non riceve aggiornamenti"
+Soluzione:
+- Verificare che il listener sia attivo
+- Controllare i log: "[AppContext] Firebase config updated"
+- Riavviare l'app per riattivare il listener
+
+Problema: "Credenziali Firebase non funzionano"
+Soluzione:
+- DEVONO essere identiche in entrambe le app
+- Controllare EXPO_PUBLIC_FIREBASE_* in .env
+- Verificare che il progetto Firebase sia configurato
+
+Problema: "Reports non si sincronizzano"
+Soluzione:
+- Verificare sync.enabled = true nelle impostazioni
+- Controllare userId e apiKey
+- Verificare che l'utente sia registrato nel MockSyncServer
+
+
+═══════════════════════════════════════════════════════════════
+                         FINE DOCUMENTO
+═══════════════════════════════════════════════════════════════
+
+Per domande o supporto, consultare:
+- FIREBASE_SETUP.md per setup Firebase
+- contexts/AppContext.tsx per logica attivazione
+- utils/firebase.ts per funzioni Firebase
+- utils/mockSyncServer.ts per API sync
+
+Il documento è pronto per essere condiviso con il team RISO Master! 🚀

@@ -1,0 +1,22 @@
+{
+  "name": "R.I.S.O. App Tecnici",
+  "short_name": "R.I.S.O. App",
+  "description": "App per gestione rapporti interventi e stato ore tecnici",
+  "start_url": "/riso-app/",
+  "display": "standalone",
+  "theme_color": "#1E40AF",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
