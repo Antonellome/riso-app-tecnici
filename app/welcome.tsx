@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight, FileText } from 'lucide-react-native';
+import { ArrowRight } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 
 export default function WelcomeScreen() {
@@ -30,7 +30,11 @@ export default function WelcomeScreen() {
       </Svg>
 
       <View style={styles.logoContainer}>
-        <FileText size={60} color="#4F7DFF" strokeWidth={2} />
+        <Image 
+          source={require('@/assets/images/icon.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </View>
 
       <View style={styles.centerContent}>
@@ -143,6 +147,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
+    overflow: 'hidden',
+  },
+  logo: {
+    width: 70,
+    height: 70,
   },
 
 });
