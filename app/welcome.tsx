@@ -31,7 +31,7 @@ export default function WelcomeScreen() {
 
       <View style={styles.logoContainer}>
         <Image
-          source={{ uri: 'https://rork.app/pa/43hptyzenad204y9frkqu/logo' }}
+          source={require('../assets/images/icon.png')}
           style={styles.logoImage}
           resizeMode="contain"
         />
