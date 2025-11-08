@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -28,14 +28,6 @@ export default function WelcomeScreen() {
           fill="#4F7DFF"
         />
       </Svg>
-
-      <View style={styles.logoContainer}>
-        <Image 
-          source={require('@/assets/images/icon.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
 
       <View style={styles.centerContent}>
         <Text style={styles.appName}>R.I.S.O. APP TECNICI</Text>
@@ -130,28 +122,4 @@ const styles = StyleSheet.create({
     fontStyle: 'italic' as const,
     marginTop: 32,
   },
-  logoContainer: {
-    position: 'absolute' as const,
-    top: 60,
-    left: '50%',
-    zIndex: 20,
-    width: 100,
-    height: 100,
-    marginLeft: -50,
-    backgroundColor: '#ffffff',
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-    overflow: 'hidden',
-  },
-  logo: {
-    width: 70,
-    height: 70,
-  },
-
 });
