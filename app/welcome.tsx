@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -33,7 +34,7 @@ export default function WelcomeScreen() {
         <Image
           source={require('../assets/images/icon.png')}
           style={styles.logoImage}
-          resizeMode="contain"
+          contentFit="contain"
         />
       </View>
 
