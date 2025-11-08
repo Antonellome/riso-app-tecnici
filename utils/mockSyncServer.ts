@@ -63,9 +63,13 @@ export interface SyncServerReport {
     name: string;
     startTime: string;
     endTime: string;
+    pauseMinutes: number;
   }[];
   createdAt: number;
   updatedAt: number;
+  createdBy?: string;
+  createdByName?: string;
+  isShared?: boolean;
 }
 
 export interface SyncConfigData {
@@ -122,26 +126,63 @@ export class MockSyncServer {
         return { success: false, message: 'Authentication failed' };
       }
 
+      const usersData = await SharedStorage.getItem(SYNC_SERVER_KEYS.USERS);
+      const users: SyncServerUser[] = usersData ? JSON.parse(usersData) : [];
+      const currentUser = users.find(u => u.id === userId);
+      const currentUserName = currentUser?.name || 'Utente Sconosciuto';
+
       const allReportsData = await SharedStorage.getItem(SYNC_SERVER_KEYS.REPORTS);
       let allReports: SyncServerReport[] = allReportsData ? JSON.parse(allReportsData) : [];
 
-      allReports = allReports.filter(r => r.userId !== userId);
-      const reportsWithUserId = reports.map(r => ({ ...r, userId }));
+      allReports = allReports.filter(r => !(r.userId === userId && !r.isShared));
+      
+      const reportsWithUserId = reports.map(r => ({ 
+        ...r, 
+        userId,
+        createdBy: userId,
+        createdByName: currentUserName,
+        isShared: false
+      }));
+      
       allReports = [...allReports, ...reportsWithUserId];
+
+      const sharedReportsToAdd: SyncServerReport[] = [];
+      for (const report of reportsWithUserId) {
+        if (report.technicians && report.technicians.length > 0) {
+          for (const tech of report.technicians) {
+            const techUser = users.find(u => u.name === tech.name);
+            if (techUser && techUser.id !== userId) {
+              const sharedReport: SyncServerReport = {
+                ...report,
+                id: `${report.id}_shared_${techUser.id}`,
+                userId: techUser.id,
+                startTime: tech.startTime,
+                endTime: tech.endTime,
+                pauseMinutes: tech.pauseMinutes,
+                isShared: true,
+                createdBy: userId,
+                createdByName: currentUserName,
+                technicians: [],
+              };
+              sharedReportsToAdd.push(sharedReport);
+            }
+          }
+        }
+      }
+
+      allReports = [...allReports, ...sharedReportsToAdd];
 
       await SharedStorage.setItem(SYNC_SERVER_KEYS.REPORTS, JSON.stringify(allReports));
 
-      const usersData = await SharedStorage.getItem(SYNC_SERVER_KEYS.USERS);
       if (usersData) {
-        const users: SyncServerUser[] = JSON.parse(usersData);
         const updatedUsers = users.map(u => 
           u.id === userId ? { ...u, lastSync: Date.now() } : u
         );
         await SharedStorage.setItem(SYNC_SERVER_KEYS.USERS, JSON.stringify(updatedUsers));
       }
 
-      console.log(`[MockSyncServer] Synced ${reports.length} reports for user ${userId}`);
-      return { success: true, message: `Synced ${reports.length} reports` };
+      console.log(`[MockSyncServer] Synced ${reports.length} reports for user ${userId}, created ${sharedReportsToAdd.length} shared copies`);
+      return { success: true, message: `Synced ${reports.length} reports, distributed to ${sharedReportsToAdd.length} technicians` };
     } catch (error) {
       console.error('Error syncing user data:', error);
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };

@@ -34,6 +34,9 @@ export interface Report {
   technicians: Technician[];
   createdAt: number;
   updatedAt: number;
+  createdBy?: string;
+  createdByName?: string;
+  isShared?: boolean;
 }
 
 export interface UserSettings {

@@ -148,6 +148,12 @@ export default function TodayReportsScreen() {
                     </View>
                   </View>
                   
+                  {report.isShared && report.createdByName && (
+                    <View style={styles.sharedBadge}>
+                      <Text style={styles.sharedBadgeText}>📋 Report di {report.createdByName}</Text>
+                    </View>
+                  )}
+                  
                   <Text style={styles.reportDescription} numberOfLines={1}>
                     {report.description || 'Nessuna descrizione'}
                   </Text>
@@ -287,6 +293,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#2563eb',
     fontWeight: '600' as const,
+  },
+  sharedBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  sharedBadgeText: {
+    fontSize: 11,
+    color: '#92400e',
+    fontWeight: '500' as const,
   },
   reportDescription: {
     fontSize: 16,
