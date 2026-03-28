@@ -1,8 +1,3 @@
 node_modules
-dist
 .env
-.env.*
-!/.env.example
-
-# Firebase
-/src/firebase.ts
+.expo
